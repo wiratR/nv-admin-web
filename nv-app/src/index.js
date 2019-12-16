@@ -1,8 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+
 import './index.css';
-import App from './App';
 import * as serviceWorker from './serviceWorker';
+
+// moved the App component to the src/components folder, you need to add the /components subpath to it.
+import App from './components/App';
 
 ReactDOM.render(<App />, document.getElementById('root'));
 
