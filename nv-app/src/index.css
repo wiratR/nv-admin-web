@@ -13,8 +13,7 @@ code {
     monospace;
 }
 
-input[type=text],
-input[type=password]{
+input[type=text],input[type=password]{
   width:100%;
   border:2px solid #aaa;
   border-radius:4px;
@@ -25,8 +24,27 @@ input[type=password]{
   transition:.3s;
 }
 
-button{
-  width:  100px;
-  height: 40px;
-  margin: 10px;
+input[type=text]:hover,input[type=password]:hover{
+  width:100%;
+  border:2px solid #4691A4;
+  border-radius:4px;
+  margin:8px 0;
+  outline:none;
+  padding:8px;
+  box-sizing:border-box;
+  transition:.3s;
+}
+
+button[type=submit]{
+	background: #4B99AD;
+	padding: 8px 15px 8px 15px;
+	border: none;
+	color: #fff;
+}
+
+button[type=submit]:hover{
+	background: #4691A4;
+	box-shadow:none;
+	-moz-box-shadow:none;
+	-webkit-box-shadow:none;
 }
