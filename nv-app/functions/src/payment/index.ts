@@ -1,42 +1,9 @@
 
 'use strict';
 
-/*
-curl -X POST \
-  https://api-sandbox.partners.scb/partners/sandbox/v1/oauth/token \
-  -H 'Content-Type: application/json' \
-  -H 'accept-language: EN' \
-  -H 'requestUId: 85230887-e643-4fa4-84b2-4e56709c4ac4' \
-  -H 'resourceOwnerId: <Your API Key>' \
-  -d '{
-      "applicationKey" : "<You API Key>",
-      "applicationSecret" : "<Your API Secret>",
-      "authCode" : "<Authorization Code>"
-  }'
-
-        // json body sample
-        json        :
-            {
-                    "status": {
-                            "code": 1000,
-                            "description": "Success"
-                    },
-                    "data": {
-                        "accessToken": "34362373-66e8-4db0-80e5-0755b67e51f9",
-                        "tokenType": "Bearer",
-                        "expiresIn": 1800,
-                        "expiresAt": 1550133185,
-                        "refreshToken": "9e80be84-5eb7-4e8c-a885-a36ff3eb6684",
-                        "refreshExpiresIn": 3600,
-                        "refreshExpiresAt": 1550134985
-                    }
-            }
-*/
-
 export function requestAccessTokenAPI(uuid: string): Promise<String> {
 
     console.log("requestAccessTokenAPI() : start ....... ");
-    // debug.log
     console.log("requestAccessTokenAPI() : UUID = " + uuid);
 
     const config = require("./paymentConfig.json");
@@ -46,12 +13,12 @@ export function requestAccessTokenAPI(uuid: string): Promise<String> {
         "Content-Type"      : "application/json",
         "accept-language"   : "EN",
         "requestUId"        : uuid,
-        "resourceOwnerId"   : config.scbPay.apiKey          //"<Your API Key>"
+        "resourceOwnerId"   : config.scbPay.apiKey          // Your API Key add './paymentConfig.json'
     };
 
     const dataString = {
-        "applicationKey"    : config.scbPay.apiKey,         //"<You API Key>"
-        "applicationSecret" : config.scbPay.apiSecret       //"<Your API Secret>"
+        "applicationKey"    : config.scbPay.apiKey,         // You API Key add './paymentConfig.json'
+        "applicationSecret" : config.scbPay.apiSecret       // Your API Secret './paymentConfig.json
     };
 
     const options = {
@@ -119,21 +86,21 @@ export function requestPaymentAPI(
 
     const headers = {
         "Content-Type"      : "application/json",
-        "authorization"     : authorizationCode,        //'Bearer 30915739-27ba-4d6d-acb6-6902fc8c49d7',
-        "resourceOwnerId"   : config.scbPay.apiKey ,    //"<Your API Key>"
+        "authorization"     : authorizationCode,                //'Bearer <accesToken>',
+        "resourceOwnerId"   : config.scbPay.apiKey ,            // <Your API Key>
         "requestUId"        : uuid,
         "accept-language"   : "EN"
     };
 
     const dataString = { 
-        "qrData"                : qrData,                   //  "<QR data from scanning>",,
-        "payeeBillerId"         : billId,                   //  "<Your Bi ller ID>" , Length: 15
-        "transactionAmount"     : txnValue,                 //  "<Transaction Amount>", "1500.00",
+        "qrData"                : qrData,                       //  <QR data from scanning>,
+        "payeeBillerId"         : billId,                       //  <Your Bi ller ID> , Length: 15
+        "transactionAmount"     : txnValue,                     //  <Transaction Amount>, "1500.00",
         // Bank Infomations
         "reference1"            : ref1Value,
         "reference2"            : ref2Value,
-        "reference3"            : ref3Value,                // "<Your Prefix Code>" ,"SCB01061900001",
-        "partnerTransactionId"  : partnerTxnValue           // "<MerchantId 15 char + random generate 20 alphanumberic>"
+        "reference3"            : ref3Value,                    // <Your Prefix Code>,"SCB01061900001",
+        "partnerTransactionId"  : partnerTxnValue               // <MerchantId 15 char + random generate 20 alphanumberic>
     };
 
     const options = {
