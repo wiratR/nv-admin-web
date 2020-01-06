@@ -4,6 +4,17 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as payments from '../payment';
 
+function updateTxnStatus( txName : String, status : String ) : void {
+
+    admin.database().ref('tx_usage')
+        .parent?.child('/tx_usage/' + txName + '/txn_status')
+        .set(status, function (error) {
+            if (error) {
+                console.log("updateTxnStatus() : failed with code " + error);
+            }
+        });
+}
+
 // Take the text parameter passed to this HTTP endpoint and insert it into the
 export const addMessage = functions.https
     //exports.addMessage = functions.https
@@ -32,7 +43,8 @@ export const addMessage = functions.https
             location_code: "0",
             payment: {
                 passenger_count: "1",
-                passenger_id: "1231536512",
+                passenger_id: "hQVDUFYwMWFGTxBBMDAwMDAwNjc3MDEyMDA1YzJBAzkxM0IQNDY5MjgyZjMyNjZmMTgyZkMGOTA0MTQyRAxTYW5kYm94IFRlc3RFAzE0MA==",
+                //"1231536512",
                 type: "1",
                 value: "20.00",
                 bill_id: "123456789012345"
@@ -69,48 +81,69 @@ export const processTxUsage = functions.database
             + "'"
         );
 
-        // generate UUID and save to database
-        const uuidv1 = require('uuid/v1');
-        const paymentUUID = uuidv1();           // 
-        // add the UUID to database
-        admin.database().ref('tx_usage')
-            .parent?.child('/tx_usage/' + context.params.pushId + '/payment/uuid_token')
-            .set(paymentUUID, function (error) {
-                if (error) {
-                    console.log("processTxUsage() : set UUID failed with code " + error);
-                }
-            });
-
         // 1. Request Access Token API
         let responseObj: any;
         try {
-            responseObj = await payments.requestAccessTokenAPI(paymentUUID);
+            responseObj = await payments.requestAccessTokenAPI();
         } catch (error) {
             console.error(error);
         }
 
         console.log("processTxUsage() : response object '" + responseObj + "'");
+
         const obj = JSON.parse(responseObj);
+
         if (obj.status.code === 1000) {
-            // Or Bearer <Your Access Token>
+
             const authCode = "Bearer " + obj.data.accessToken;
             console.log("processTxUsage() : get authenitaction Code = " + authCode);
+
             // 2. Call B Scan C payment api
             let responsePaymentObj: any;
             try {
-                responsePaymentObj = await payments.requestPaymentAPI(authCode.toString(), paymentUUID, paymentCode, paymentValue, paymentBillId);
+                responsePaymentObj = await payments.requestPaymentAPI(
+                    authCode,
+                    paymentCode, 
+                    paymentValue, 
+                    paymentBillId
+                );
             } catch (error) {
-                console.error(error);
+                console.log("processTxUsage() : requestPaymentAPI failed = " + error );
             }
-
-            console.log("processTxUsage() : response payment object '" + responsePaymentObj + "'");
-
+            // handle return undefined
+            if (typeof responsePaymentObj === "undefined") {
+                console.log("processTxUsage() :  " + paymentCode + " is failed.");
+                // update transaction "status to error."
+                updateTxnStatus(context.params.pushId, "error") ;
+            } else {
+                //console.log("processTxUsage() : response payment object '" + responsePaymentObj + "'");
+                const paymentObj = JSON.parse(responsePaymentObj);
+                //  Business status code sucess ............. 
+                if (paymentObj.status.code === 1000) {
+                    // update responsePaymentObj to payment_sucess
+                    admin.database().ref('/payment_sucess/' + paymentObj.data.partnerTransactionId).set({
+                        type : "scb",
+                        transactionAmount: paymentObj.data.transactionAmount,
+                        transationDateTime: paymentObj.data.transationDateTime
+                    });
+                    // update transaction "status to sucess."
+                    updateTxnStatus(context.params.pushId, "sucess");
+                }else{
+                    // update transaction "status to reject."
+                    updateTxnStatus(context.params.pushId, "reject");
+                    console.log("processTxUsage() : payment failed code " + paymentObj.status.code);
+                    console.log("processTxUsage() : description " + paymentObj.status.description);
+                }
+            }
         } else {
             //console.log("processTxUsage() : response object '" + responseObj + "'");
             // Access Authorization Errors
             // will be re-trying ?? 
-        }
+            console.log("processTxUsage() : authen accessToken failed code " + obj.status.code);
+            console.log("processTxUsage() : description " + obj.status.description);
 
+            updateTxnStatus(context.params.pushId, "error");
+        }
 
         return null;
 
@@ -138,10 +171,6 @@ export const processTxRefund = functions.database
                         console.log("processTxnRefund() : set UUID failed with code " + error);
                     }
                 });
-
-            
-
-            
 
             // call
         }else{

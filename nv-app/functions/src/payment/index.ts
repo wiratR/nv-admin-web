@@ -1,18 +1,18 @@
 
 'use strict';
 
-export function requestAccessTokenAPI(uuid: string): Promise<String> {
+export function requestAccessTokenAPI(): Promise<String> {
 
-    console.log("requestAccessTokenAPI() : start ....... ");
-    console.log("requestAccessTokenAPI() : UUID = " + uuid);
+    console.log("requestAccessTokenAPI() : start ...... ");
 
     const config = require("./paymentConfig.json");
     const request = require('request');
-
+    const uuidv1 = require('uuid/v1');
+    
     const headers = {
         "Content-Type"      : "application/json",
         "accept-language"   : "EN",
-        "requestUId"        : uuid,
+        "requestUId"        : uuidv1(),
         "resourceOwnerId"   : config.scbPay.apiKey          // Your API Key add './paymentConfig.json'
     };
 
@@ -31,75 +31,68 @@ export function requestAccessTokenAPI(uuid: string): Promise<String> {
 
     return new Promise(function (resolve, reject) {
         request(options,
-            function (error: any, response: { statusCode: number; }, body: any) {
+            function (error: any, response: { statusCode: number }, body: any) {
+                console.log("requestAccessTokenAPI() : get a https response status code = " + response.statusCode);
+                console.log("requestAccessTokenAPI() : get a body status code = " + body.status.code);
+                console.log("requestAccessTokenAPI() : get a body status description = " + body.status.description);
                 if (!error && response.statusCode === 200) {
                     resolve(JSON.stringify(body));
                 }
                 else{ 
-                    reject(error);
+                    if( error === null ){
+                        //reject(response.statusCode);
+                        reject(JSON.stringify(body));
+                    }else{
+                        reject(error);
+                    }
                 }
             });
-        console.log("requestAccessTokenAPI() : end ....... ");
+        console.log("requestAccessTokenAPI() : end ...... ");
     });
 }
 
 export function requestPaymentAPI(
         authorizationCode : string, 
-        uuid : string,
-        qrData : string,
+        qrData  : string,
         txnValue : string,
         billId : string
     ): Promise<String>  {
 
-    console.log("resquestPaymentAPI() : start ....... ");
+    console.log("resquestPaymentAPI() : start ...... ");
 
     const config = require("./paymentConfig.json");
-    
     const randomize = require('randomatic');
-    // Generate randomized strings of a specified length using simple character sequences. The original generate-password.
-    /* randomize(pattern, length, options);
-    pattern
-    a: Lowercase alpha characters (abcdefghijklmnopqrstuvwxyz')
-    A: Uppercase alpha characters (ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-    0: Numeric characters (0123456789')
-    !: Special characters (~!@#$%^&()_+-={}[];\',.)
-    *: All characters (all of the above combined)
-    ?: Custom characters (pass a string of custom characters to the options)
-    */
 
-    const merchantId = "165134740692203";   // <15 chard> // testing ?!
-
-    const partnerTxnValue = merchantId + randomize('A0', 20);
-
-    const ref1Value = "12345678901234567890";
-    const ref2Value = "1";
-    const ref3Value = ""; // "<Your Prefix Code>"
+    const partnerTxnValue   = config.scbPay.merchardId + randomize('A0', 20);
 
     // debug.log
-    console.log("resquestPaymentAPI() : UUID = " + uuid
-        + " ,authorization code = " + authorizationCode
+    console.log("resquestPaymentAPI() : authorization code = " + authorizationCode
+        + " ,qrData = " + qrData
         + " ,transation value   = " + txnValue
         + " ,partnerTxn value   = " + partnerTxnValue
+        + " ,billId = " + billId
     );
 
     const request = require('request');
+    const uuidv1 = require('uuid/v1');
 
     const headers = {
-        "Content-Type"      : "application/json",
-        "authorization"     : authorizationCode,                //'Bearer <accesToken>',
-        "resourceOwnerId"   : config.scbPay.apiKey ,            // <Your API Key>
-        "requestUId"        : uuid,
-        "accept-language"   : "EN"
+        "Content-Type"          : "application/json",
+        "accept-language"       : "EN",
+        "requestUId"            : uuidv1(),
+        "resourceOwnerId"       : config.scbPay.apiKey,         // Your API Key add './paymentConfig.json'
+        "authorization"         : authorizationCode,            //'Bearer <accesToken>',
     };
 
     const dataString = { 
         "qrData"                : qrData,                       //  <QR data from scanning>,
-        "payeeBillerId"         : billId,                       //  <Your Bi ller ID> , Length: 15
+        "payeeTerminalNo"       : config.scbPay.terminalId,
+        "payeeBillerId"         : config.scbPay.merchardId,     //  <Your Bi ller ID> , Length: 15
         "transactionAmount"     : txnValue,                     //  <Transaction Amount>, "1500.00",
-        // Bank Infomations
-        "reference1"            : ref1Value,
-        "reference2"            : ref2Value,
-        "reference3"            : ref3Value,                    // <Your Prefix Code>,"SCB01061900001",
+        "transationCurrency"    : "THB",
+        "reference1"            : billId + randomize('0',5),
+        "reference2"            : randomize('0', 5) + billId,
+        "reference3"            : config.scbPay.prefixCode,     // <Your Prefix Code>,"SCB01061900001",
         "partnerTransactionId"  : partnerTxnValue               // <MerchantId 15 char + random generate 20 alphanumberic>
     };
 
@@ -114,32 +107,39 @@ export function requestPaymentAPI(
     return new Promise(function (resolve, reject) {
         request(options,
             function (error: any, response: { statusCode: number; }, body: any) {
+                console.log("resquestPaymentAPI() : get a https response status code = " + response.statusCode);
+                console.log("resquestPaymentAPI() : get a body status code = " + body.status.code);
+                console.log("resquestPaymentAPI() : get a body status description = " + body.status.description);
                 if (!error && response.statusCode === 200) {
                     resolve(JSON.stringify(body));
                 }
                 else {
-                    reject(error);
+                    if(error === null){
+                        //reject(response.statusCode);
+                        reject(JSON.stringify(body));
+                    }else{
+                        reject(error);
+                    }
                 }
             });
-
-        console.log("resquestPaymentAPI() : end ....... ");
+        console.log("resquestPaymentAPI() : end ...... ");
     });
 }
 
 export function requestRefundAPI(
     authorizationCode   : string,
-    uuid                : string,
     partnerTxnId        : string
 ): Promise<String> {
  
     const request = require('request');
     const config  = require("./paymentConfig.json");
+    const uuidv1 = require('uuid/v1');
 
     const headers = {
         "content-type"      : "application/json",
         "authorization"     : authorizationCode,       
         "resourceOwnerID"   : config.scbPay.apiKey,
-        "requestUID"        : uuid,                     
+        "requestUID"        : uuidv1(),                     
         "accept-language"   : "EN"
     };
 
