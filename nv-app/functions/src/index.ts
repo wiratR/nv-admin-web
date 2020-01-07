@@ -15,6 +15,80 @@ function clearArray<T>(array: T[]) {
     }
 }
 
+// crontab schedule for create TD 
+exports.cronCreateRefundTd = functions
+    .pubsub.schedule('every 3 minutes')
+    .timeZone('Asia/Bangkok')
+    .onRun(async context => {
+        console.log("cronCreateRefundTd() : triggered every 3 minutes");
+
+        //let itemObj: string[] = [{id: String}];
+        const refRefundRequest = admin.database()
+                            .ref("refund_request").orderByKey();
+
+/*
+state: "initial",
+type: "scbAPI",
+partnerTransactionId    : paymentObj.data.partnerTransactionId,
+transactionAmount       : paymentObj.data.transactionAmount,
+transactionDateTime     : paymentObj.data.transactionDateTime
+*/
+
+        const itemObj: {
+            item_id                 : string;
+            state                   : any;
+            type                    : any;
+            partnerTransactionId    : any;
+            transactionAmount       : any;
+            transactionDateTime     : any;
+        }[] = [];
+
+        // snapShot database
+        refRefundRequest.on('value', (snapshot) => {
+            const refundRequestObj = snapshot?.val();
+            for (const item in refundRequestObj) {
+                //console.log("cronSetRecheckDevice() : device id '" + item 
+                //    + "' status '" + dv_statusObj[item].status 
+                //    + "' recheck '" + dv_statusObj[item].recheck + "'");
+                itemObj.push({
+                    item_id : item,
+                    state   : refundRequestObj[item].state, 
+                    type    : refundRequestObj[item].type,
+                    partnerTransactionId    : refundRequestObj[item].partnerTransactionId,
+                    transactionAmount       : refundRequestObj[item].transactionAmount,
+                    transactionDateTime     : refundRequestObj[item].transactionDateTime
+                });
+            }
+        });
+
+        for (const key of itemObj) {
+            if (key.state === "initial" && key.type === "scbAPI") {
+                console.log("cronCreateRefundTd() : start addMessageRefund() ...... ");
+                await db.addRefundMessage (key.partnerTransactionId , key.transactionAmount);
+
+                // update 'state' done
+                admin.database().ref('refund_request')
+                    .parent?.child('/refund_request/' + key.item_id+ '/state')
+                    .set("done", function (error) {
+                        if (error) {
+                            console.log("updateTxnStatus() : failed with code " + error);
+                        }
+                    });
+
+                console.log("cronSetRecheckDevice() : end addMessageRefund() ...... ");
+            }else{
+                console.log("cronCreateRefundTd() : state " + key.state);
+                console.log("cronCreateRefundTd() : type "  + key.type);
+                console.log("cronCreateRefundTd() : end No Update"); 
+            }
+        }
+
+        // clear array object 
+        clearArray(itemObj);
+
+        return null;
+    });
+
 exports.cronSetRecheckDevice = functions
     //.pubsub.schedule('5 * * * *')
     .pubsub.schedule('every 5 minutes')
@@ -25,7 +99,7 @@ exports.cronSetRecheckDevice = functions
         //let itemObj: string[] = [{id: String}];
         const refdvStatus = admin.database().ref("dv_status").orderByKey();
 
-        let itemObj: { 
+        const itemObj: { 
             item_id: string; 
             device_id: any; 
             datetime: any; 
@@ -50,7 +124,7 @@ exports.cronSetRecheckDevice = functions
             }
         });
 
-        for (let key of itemObj) 
+        for (const key of itemObj) 
         {
             //console.log("cronSetRecheckDevice() : key " + key.item_id );
 
@@ -90,8 +164,6 @@ exports.cronSetRecheckDevice = functions
 
         // clear array object 
         clearArray(itemObj);
-        
-
         console.log("cronSetRecheckDevice() : --------------------------------------------- ");
         return null;
     });

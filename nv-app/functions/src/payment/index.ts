@@ -40,7 +40,6 @@ export function requestAccessTokenAPI(): Promise<String> {
                 }
                 else{ 
                     if( error === null ){
-                        //reject(response.statusCode);
                         reject(JSON.stringify(body));
                     }else{
                         reject(error);
@@ -115,7 +114,6 @@ export function requestPaymentAPI(
                 }
                 else {
                     if(error === null){
-                        //reject(response.statusCode);
                         reject(JSON.stringify(body));
                     }else{
                         reject(error);
@@ -130,7 +128,14 @@ export function requestRefundAPI(
     authorizationCode   : string,
     partnerTxnId        : string
 ): Promise<String> {
+
+    console.log("requestRefundAPI() : start ...... ");
  
+    // debug.log
+    console.log("requestRefundAPI() : authorization code = " + authorizationCode
+        + " ,partnerTxn value   = " + partnerTxnId
+    );
+
     const request = require('request');
     const config  = require("./paymentConfig.json");
     const uuidv1 = require('uuid/v1');
@@ -158,13 +163,21 @@ export function requestRefundAPI(
     return new Promise(function (resolve, reject) {
         request(options,
             function (error: any, response: { statusCode: number; }, body: any) {
+                console.log("requestRefundAPI() : get a https response status code = " + response.statusCode);
+                console.log("requestRefundAPI() : get a body status code = " + body.status.code);
+                console.log("requestRefundAPI() : get a body status description = " + body.status.description);
                 if (!error && response.statusCode === 200) {
                     resolve(JSON.stringify(body));
                 }
                 else {
-                    reject(error);
+                    if (error === null) {
+                        reject(JSON.stringify(body));
+                    } else {
+                        reject(error);
+                    }
                 }
             });
+        console.log("requestRefundAPI() : end ...... ");
     });
 }
 
