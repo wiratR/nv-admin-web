@@ -58,6 +58,89 @@ export async function addRefundMessage (
 
 }
 
+function getDevcieIP( deviceNumber: String) : String {
+
+    const refdvStatus = admin.database().ref("dv_status").orderByKey();
+
+    const refDvNumber = "evt_bus_" + String(deviceNumber);
+
+    console.log("getDeviceIP() : get a ref number " + refDvNumber)
+
+    const itemObj: {
+        item_id: string;
+        device_id: any;
+    }[] = [];
+
+    // snapShot database
+    refdvStatus.on('value', (snapshot) => {
+        const dv_statusObj = snapshot?.val();
+        for (const item in dv_statusObj) {
+            //console.log("cronSetRecheckDevice() : device id '" + item 
+            //    + "' status '" + dv_statusObj[item].status 
+            //    + "' recheck '" + dv_statusObj[item].recheck + "'");
+            itemObj.push({
+                item_id: item,
+                device_id: dv_statusObj[item].device_id
+            });
+        }
+    });
+
+    for (const key of itemObj) {
+        if (key.item_id === refDvNumber ) {
+            console.log("getDevcieIP() : get IP " + key.device_id);
+            return key.device_id;
+        }
+    }
+
+    return "";
+}
+
+
+export async function addPaymentMessage(
+    txName                  : String,
+    paymentCodeId           : string,
+    paymentType             : string,
+    txnAmountValue          : string,
+    loc_accuracy            : string,
+    loc_latitude            : String, 
+    loc_longitude           : string
+): Promise<void> {
+    console.log("addPaymentMessage() : partner TxnId = " + txName
+        + " ,payment Code Id = " + paymentCodeId
+        + " ,transaction amount = " + txnAmountValue
+    );
+    // 012345678901234567890123456  
+    // TP_yyyymmdd_hhmmss_ssss_dat
+    const resultdv_ip = getDevcieIP(txName.substring(19, 23));
+    const dateStr = txName.substring(3, 7) + "/" + txName.substring(7,9) + "/" + txName.substring(9,11);
+    const timeStr = txName.substring(12, 14) + ":" + txName.substring(14,16) + ":" + txName.substring(16,18);
+
+    await admin.database().ref('/tx_usage/' + txName).set({
+        device_id   : resultdv_ip,
+        device_type : "15",
+        location: {
+            accuracy: loc_accuracy,
+            latitude: loc_latitude,
+            longitude: loc_longitude
+        },
+        location_code: "0",
+        payment: {
+            passenger_count     : "1",
+            passenger_id        : paymentCodeId,
+            type                : paymentType,
+            value               : txnAmountValue,
+            bill_id             : "123456789012345"
+        },
+        txn_date    : dateStr,
+        txn_status  : "0",
+        txn_time    : timeStr,
+        txn_type    : "payment"
+    });
+
+    console.log("addPaymentMessage() : done to add new " + txName);
+
+}
+
 // Take the text parameter passed to this HTTP endpoint and insert it into the
 // sample url ::: /paymentAddMessage?qrData=''&payValue=''
 export const addMessage = functions.https

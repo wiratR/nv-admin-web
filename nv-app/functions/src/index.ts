@@ -16,6 +16,101 @@ function clearArray<T>(array: T[]) {
 }
 
 // crontab schedule for create TD 
+exports.cronCreatePaymentTd = functions
+    .pubsub.schedule('every 1 minutes')
+    .timeZone('Asia/Bangkok')
+    .onRun(async context => {
+        console.log("cronCreatePaymentTd() : triggered every 1 minutes");
+
+        //let itemObj: string[] = [{id: String}];
+        const refPaymentRequest = admin.database()
+            .ref("payment_request").orderByKey();
+
+        const itemObj: {
+            item_id             : string;
+            state               : any;
+            type                : any;
+            paymentId           : any;
+            transactionAmount   : any;
+        }[] = [];
+
+        // snapShot database
+        refPaymentRequest.on('value', (snapshot) => {
+            const paymentRequestObj = snapshot?.val();
+            for (const item in paymentRequestObj) {
+                //console.log("cronSetRecheckDevice() : device id '" + item 
+                //    + "' status '" + dv_statusObj[item].status 
+                //    + "' recheck '" + dv_statusObj[item].recheck + "'");
+                itemObj.push({
+                    item_id             : item,
+                    state               : paymentRequestObj[item].state,
+                    type                : paymentRequestObj[item].type,
+                    paymentId           : paymentRequestObj[item].paymentId,
+                    transactionAmount   : paymentRequestObj[item].transactionAmount
+                });
+            }
+        });
+
+
+        //let itemObj: string[] = [{id: String}];
+        let loc_accuracy: any;
+        let loc_latitude: any;
+        let loc_longitude: any;
+        
+
+        for (const key of itemObj) {
+            if (key.state === "initial" && key.type === "scbAPI") {
+                console.log("cronCreatePaymentTd() : start addMessagePaymenmt() ...... ");
+
+                //let itemObj: string[] = [{id: String}];
+                admin.database().ref()
+                    .child('/payment_request/' + key.item_id +'/location')
+                    .on('value', function (snap) {
+
+                        
+
+                        loc_accuracy = snap?.child("/accuracy").val();
+                        loc_latitude = snap?.child("/latitude").val();
+                        loc_longitude = snap?.child("/longitude").val();
+                        console.log("addPaymentMessage() : loc_accuracy " + loc_accuracy);
+                        console.log("addPaymentMessage() : loc_latitude " + loc_latitude);
+                        console.log("addPaymentMessage() : loc_longitude " + loc_longitude);
+                });
+
+                await db.addPaymentMessage(
+                    key.item_id,
+                    key.paymentId,
+                    key.type,
+                    key.transactionAmount,
+                    loc_accuracy,
+                    loc_latitude,
+                    loc_longitude
+                );
+
+                // update 'state' done
+                admin.database().ref('payment_request')
+                    .parent?.child('/payment_request/' + key.item_id + '/state')
+                    .set("done", function (error) {
+                        if (error) {
+                            console.log("cronCreatePaymentTd() : failed with code " + error);
+                        }
+                    });
+
+                console.log("cronCreatePaymentTd() : end addMessagePayment() ...... ");
+            } else {
+                console.log("cronCreatePaymentTd() : state " + key.state);
+                console.log("cronCreatePaymentTd() : type " + key.type);
+                console.log("cronCreatePaymentTd() : end No Update");
+            }
+        }
+
+        // clear array object 
+        clearArray(itemObj);
+
+        return null;
+    });
+
+// crontab schedule for create TD 
 exports.cronCreateRefundTd = functions
     .pubsub.schedule('every 3 minutes')
     .timeZone('Asia/Bangkok')
