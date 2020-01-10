@@ -58,6 +58,7 @@ export async function addRefundMessage (
 
 }
 
+
 function getDevcieIP( deviceNumber: String) : String {
 
     const refdvStatus = admin.database().ref("dv_status").orderByKey();
@@ -94,7 +95,6 @@ function getDevcieIP( deviceNumber: String) : String {
 
     return "";
 }
-
 
 export async function addPaymentMessage(
     txName                  : String,

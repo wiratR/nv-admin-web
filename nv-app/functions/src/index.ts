@@ -31,16 +31,13 @@ exports.cronCreatePaymentTd = functions
             state               : any;
             type                : any;
             paymentId           : any;
-            transactionAmount   : any;
+            transactionAmount   : any;    
         }[] = [];
 
         // snapShot database
         refPaymentRequest.on('value', (snapshot) => {
             const paymentRequestObj = snapshot?.val();
             for (const item in paymentRequestObj) {
-                //console.log("cronSetRecheckDevice() : device id '" + item 
-                //    + "' status '" + dv_statusObj[item].status 
-                //    + "' recheck '" + dv_statusObj[item].recheck + "'");
                 itemObj.push({
                     item_id             : item,
                     state               : paymentRequestObj[item].state,
@@ -51,31 +48,35 @@ exports.cronCreatePaymentTd = functions
             }
         });
 
-
         //let itemObj: string[] = [{id: String}];
         let loc_accuracy: any;
         let loc_latitude: any;
         let loc_longitude: any;
         
-
         for (const key of itemObj) {
             if (key.state === "initial" && key.type === "scbAPI") {
                 console.log("cronCreatePaymentTd() : start addMessagePaymenmt() ...... ");
-
-                //let itemObj: string[] = [{id: String}];
-                admin.database().ref()
-                    .child('/payment_request/' + key.item_id +'/location')
+                
+                admin.database().ref('payment_request')
+                    .parent?.child('/payment_request/' + key.item_id + '/location/accuracy')
                     .on('value', function (snap) {
-
-                        
-
-                        loc_accuracy = snap?.child("/accuracy").val();
-                        loc_latitude = snap?.child("/latitude").val();
-                        loc_longitude = snap?.child("/longitude").val();
+                        loc_accuracy = snap?.val();
                         console.log("addPaymentMessage() : loc_accuracy " + loc_accuracy);
+                    });
+
+                admin.database().ref('payment_request')
+                    .parent?.child('/payment_request/' + key.item_id + '/location/latitude')
+                    .on('value', function (snap) {
+                        loc_latitude = snap?.val();
                         console.log("addPaymentMessage() : loc_latitude " + loc_latitude);
+                    });
+
+                admin.database().ref('payment_request')
+                    .parent?.child('/payment_request/' + key.item_id + '/location/longitude')
+                    .on('value', function (snap) {
+                        loc_longitude = snap?.val();
                         console.log("addPaymentMessage() : loc_longitude " + loc_longitude);
-                });
+                    });
 
                 await db.addPaymentMessage(
                     key.item_id,
@@ -97,6 +98,7 @@ exports.cronCreatePaymentTd = functions
                     });
 
                 console.log("cronCreatePaymentTd() : end addMessagePayment() ...... ");
+
             } else {
                 console.log("cronCreatePaymentTd() : state " + key.state);
                 console.log("cronCreatePaymentTd() : type " + key.type);
