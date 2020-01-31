@@ -1,11 +1,10 @@
 import React, { Component }  from 'react';
-
 import { withAuthorization } from '../Session';
 import firebase from 'firebase';
 
 const HomePage = () => (
   <div>
-    <h1>Home Page</h1>
+    <h1>Home</h1>
     < DeviceStatusForm/>
     < LocationForm/>
   </div>
@@ -51,9 +50,10 @@ class DeviceStatusForm extends Component  {
   }
   render() {
     return (
+      // html design here
       <div className="device">
           <nav class="navbar navbar-light bg-primary">
-            <span class="navbar-brand mb-0 h1">Device Status Details</span>
+            <span class="navbar-brand mb-0 h1">Device Status</span>
           </nav>
           <div className="container" style={{marginTop:70}}>
               <table className="table table-sm table-bordered">

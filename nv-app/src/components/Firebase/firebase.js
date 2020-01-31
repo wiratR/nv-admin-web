@@ -11,6 +11,7 @@ const config = {
   messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
 };
 */
+/*
 const config = {
   apiKey: "AIzaSyA5CIzoNQCPAUmJsaxQWu_YfgFBYTK_ha0",
   authDomain: "admin-web-fcb56.firebaseapp.com",
@@ -21,10 +22,22 @@ const config = {
   appId: "1:1087616861138:web:55e9a6f2e15607c4cc7e0b",
   measurementId: "G-QW98HE447B"
 };
+*/
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB0QIE5ovq7wBk2mGpJOWV_dhwktC7otWY",
+  authDomain: "qr-evt-db.firebaseapp.com",
+  databaseURL: "https://qr-evt-db.firebaseio.com",
+  projectId: "qr-evt-db",
+  storageBucket: "qr-evt-db.appspot.com",
+  messagingSenderId: "674043381322",
+  appId: "1:674043381322:web:3e0c01efac7894d3b988b3",
+  measurementId: "G-48F08239KK"
+};
 
 class Firebase {
   constructor() {
-    app.initializeApp(config);
+    app.initializeApp(firebaseConfig);
 
     this.auth = app.auth();
     this.db = app.database();
